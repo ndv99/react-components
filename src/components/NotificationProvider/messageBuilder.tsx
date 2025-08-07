@@ -37,15 +37,20 @@ export const failure = (
 ): NotificationType => {
   return {
     actions,
-    message:
-      error && error instanceof Error ? (
-        <>
-          {message} {error.message}
-        </>
-      ) : (
-        message
-      ),
+    message: formatErrorMessage(message, error),
     title,
     type: NotificationSeverity.NEGATIVE,
   };
+};
+
+export const formatErrorMessage = (message?: ReactNode, error?: unknown) => {
+  if (error && error instanceof Error) {
+    return (
+      <>
+        {message} {error.message}
+      </>
+    );
+  } else {
+    return message;
+  }
 };

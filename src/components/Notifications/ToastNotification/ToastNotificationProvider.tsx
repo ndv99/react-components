@@ -3,19 +3,20 @@ import type {
   NotificationType,
 } from "components/NotificationProvider";
 import type { ValueOf } from "types";
-import { failure } from "components/NotificationProvider";
 import { NotificationSeverity } from "components/Notifications";
 import ToastNotification from "./ToastNotification";
 import ToastNotificationList from "./ToastNotificationList";
 import type { FC, PropsWithChildren, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import React from "react";
+import { formatErrorMessage } from "components/NotificationProvider/messageBuilder";
 
 const HIDE_NOTIFICATION_DELAY = 5_000;
 
 export type ToastNotificationType = NotificationType & {
   timestamp?: ReactNode;
   id: string;
+  entityId?: string | number;
 };
 
 interface Props {
@@ -28,22 +29,26 @@ interface ToastNotificationHelper {
     message: ReactNode,
     actions?: NotificationAction[],
     title?: string,
+    entityId?: ToastNotificationType["entityId"],
   ) => ToastNotificationType;
   info: (
     message: ReactNode,
     title?: string,
     actions?: NotificationAction[],
+    entityId?: ToastNotificationType["entityId"],
   ) => ToastNotificationType;
   failure: (
     title: string,
     error: unknown,
     message?: ReactNode,
     actions?: NotificationAction[],
+    entityId?: ToastNotificationType["entityId"],
   ) => ToastNotificationType;
   caution: (
     message: ReactNode,
     actions?: NotificationAction[],
     title?: string,
+    entityId?: ToastNotificationType["entityId"],
   ) => ToastNotificationType;
   clear: (notification?: ToastNotificationType[]) => void;
   toggleListView: () => void;
@@ -199,7 +204,10 @@ const ToastNotificationProvider: FC<PropsWithChildren<Props>> = ({
   };
 
   const addNotification = (
-    notification: NotificationType & { error?: unknown },
+    notification: NotificationType & {
+      error?: unknown;
+      entityId?: ToastNotificationType["entityId"];
+    },
   ) => {
     const notificationToAdd = {
       ...notification,
@@ -217,6 +225,7 @@ const ToastNotificationProvider: FC<PropsWithChildren<Props>> = ({
   };
 
   const clear = (notifications?: ToastNotificationType[]) => {
+    console.log(notifications);
     if (onDismiss) {
       onDismiss(notifications);
     }
@@ -262,28 +271,38 @@ const ToastNotificationProvider: FC<PropsWithChildren<Props>> = ({
 
   const helper: ToastNotificationHelper = {
     notifications,
-    failure: (title, error, message, actions) =>
-      addNotification(failure(title, error, message, actions)),
-    info: (message, title, actions) =>
+    failure: (title, error, message, actions, entityId) =>
+      addNotification({
+        message: formatErrorMessage(message, error),
+        title,
+        error,
+        actions,
+        entityId,
+        type: NotificationSeverity.NEGATIVE,
+      }),
+    info: (message, title, actions, entityId) =>
       addNotification({
         message,
         actions,
         title,
         type: NotificationSeverity.INFORMATION,
+        entityId,
       }),
-    success: (message, actions, title) =>
+    success: (message, actions, title, entityId) =>
       addNotification({
         message,
         actions,
         title,
         type: NotificationSeverity.POSITIVE,
+        entityId,
       } as NotificationType),
-    caution: (message, actions, title) =>
+    caution: (message, actions, title, entityId) =>
       addNotification({
         message,
         actions,
         title,
         type: NotificationSeverity.CAUTION,
+        entityId,
       }),
     clear,
     toggleListView,
